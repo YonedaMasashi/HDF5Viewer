@@ -1,0 +1,153 @@
+use arrow::array::{Int32Array, Int64Array, RecordBatch, StringArray};
+use arrow::json::writer::JsonFormat;
+use ndarray::Data;
+use polars::io::ArrowReader;
+use polars::prelude::*;
+use polars_arrow::array::Utf8Array;
+use serde::Serialize;
+use tauri::command;
+use std::path::PathBuf;
+
+use std::io::Cursor;
+use arrow::ipc::reader::FileReader;
+use arrow::util::pretty;
+use hdf5::File;
+use polars::frame::DataFrame as PolarsDataFrame;
+
+use serde_json::json;
+
+use polars::prelude::*;
+
+
+#[derive(Serialize)]
+struct DataFrameRow {
+    column1: String,
+    column2: i32,
+}
+
+#[derive(Serialize)]
+struct DataFrameRow2 {
+    column1: i64,
+    column2: String,
+    column3: String,
+}
+
+#[command]
+fn get_dataframe() -> Vec<DataFrameRow> {
+    // DataFrame を作成
+    let df = df!(
+        "column1" => &["A", "B", "C"],
+        "column2" => &[1, 2, 3]
+    ).expect("Failed to create DataFrame");
+
+    // DataFrame を Vec<DataFrameRow> に変換
+    let column1_series = df.column("column1").expect("Column not found");
+    let column2_series = df.column("column2").expect("Column not found");
+
+    let mut rows = Vec::new();
+
+    for i in 0..df.height() {
+        let column1_value = column1_series.get(i).unwrap().to_string();
+        let column2_value = match column2_series.get(i).unwrap() {
+            AnyValue::Int32(val) => val,
+            _ => panic!("Unexpected type in column2"),
+        };
+        rows.push(DataFrameRow {
+            column1: column1_value,
+            column2: column2_value,
+        });
+    }
+
+    rows
+}
+
+
+#[command]
+fn read_data_frame(file_path: String) -> Vec<DataFrameRow2> {
+    let path = PathBuf::from(file_path.clone());
+    println!("Received file path: {:?}", path);
+
+    // HDF5 を読み込む
+    let file = File::open(file_path.clone()).unwrap();
+    let dataset = file.dataset("arrow_data").unwrap();
+
+    // データを読み込む
+    let data: Vec<u8> = dataset.read_raw().unwrap();
+
+    // Arrow IPC 形式のデータを読み込む
+    let cursor = Cursor::new(data);
+    let reader = FileReader::try_new(cursor, None).unwrap();
+
+    // Arrow のレコードバッチを Polars の DataFrame に変換
+    let mut batches = Vec::new();
+    for batch in reader {
+        let record_batch = batch.unwrap();
+
+        let columns: Vec<Series> = record_batch
+            .columns()
+            .iter()
+            .zip(record_batch.schema().fields())
+            .map(|(array, field)| {
+                match field.data_type() {
+                    arrow::datatypes::DataType::Int64 => {
+                        let int_array = array
+                            .as_any()
+                            .downcast_ref::<Int64Array>()
+                            .expect("Failed to downcast to Int64Array");
+                        Series::new(field.name(), int_array.values())
+                    },
+                    arrow::datatypes::DataType::Utf8 => {
+                        let str_array = array
+                            .as_any()
+                            .downcast_ref::<StringArray>()
+                            .expect("Failed to downcast to Utf8Array");
+                        let str_values: Vec<_> = str_array.iter().map(|s| s.map(|s_val| s_val)).flatten().collect();
+                        Series::new(field.name(), &str_values)
+                    }
+                    _ => unimplemented!("Unsupported data type:{}", field.data_type()),
+                }
+            })
+            .collect();
+        let df = DataFrame::new(columns).unwrap();
+        batches.push(df);
+    }
+
+    let mut concatenated_df = batches[0].clone();
+    for df in &batches[1..] {
+        concatenated_df.vstack_mut(&df);
+    }
+
+    // DataFrame を Vec<DataFrameRow2> に変換
+    let column1_series = concatenated_df.column("column1").expect("Column not found");
+    let column2_series = concatenated_df.column("column2").expect("Column not found");
+    let column3_series = concatenated_df.column("column3").expect("Column not found");
+
+    let mut rows = Vec::new();
+
+    for i in 0..concatenated_df.height() {
+        let column1_value = match column1_series.get(i).unwrap() {
+            AnyValue::Int64(val) => val,
+            _ => panic!("Unexpected type in column1"),
+        };
+        let column2_value = column2_series.get(i).unwrap().to_string();
+        let column3_value = column3_series.get(i).unwrap().to_string();
+        rows.push(DataFrameRow2 {
+            column1: column1_value,
+            column2: column2_value,
+            column3: column3_value,
+        });
+    }
+
+    concatenated_df.write_json();
+    
+    rows
+}
+
+
+fn main() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![get_dataframe])
+        .invoke_handler(tauri::generate_handler![read_data_frame])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
