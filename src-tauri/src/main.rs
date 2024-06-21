@@ -199,7 +199,7 @@ fn get_dataframe_dynamic_local(dataset: &Dataset) -> Result<String, String> {
                             .as_any()
                             .downcast_ref::<StringArray>()
                             .expect("Failed to downcast to Utf8Array");
-                        let str_values: Vec<_> = str_array.iter().map(|s| s.map(|s_val| s_val)).flatten().collect();
+                        let str_values: Vec<String> = str_array.iter().map(|s| s.map(|s_val| s_val.to_string())).flatten().collect();
                         Series::new(field.name(), &str_values)
                     }
                     _ => unimplemented!("Unsupported data type:{}", field.data_type()),
@@ -246,7 +246,7 @@ fn get_dataframe_dynamic_local(dataset: &Dataset) -> Result<String, String> {
                 AnyValue::Datetime(v, _, _) => serde_json::json!(v),
                 AnyValue::Time(v) => serde_json::json!(v),
                 AnyValue::Null => serde_json::json!(null),
-                _ => serde_json::json!(format!("{:?}", value)), // デフォルトとしてデバッグ表記を使用
+                _ => serde_json::json!(format!("{}", value.to_string())), // デフォルトとしてデバッグ表記を使用
             };
             row.insert(col.name().to_string(), json_value);
         }
