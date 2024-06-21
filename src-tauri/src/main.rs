@@ -1,153 +1,18 @@
-use arrow::array::{Int32Array, Int64Array, RecordBatch, StringArray};
-use arrow::json::writer::JsonFormat;
-use ndarray::Data;
-use polars::io::{json, ArrowReader};
-use polars::prelude::*;
-use polars_arrow::array::Utf8Array;
-use serde::Serialize;
-use tauri::command;
 use std::path::PathBuf;
-
 use std::io::Cursor;
-use std::result;
-use arrow::ipc::reader::FileReader;
-use arrow::util::pretty;
-use polars::frame::DataFrame as PolarsDataFrame;
 
-use serde_json::json;
-
-use polars::prelude::*;
+use tauri::command;
 
 use hdf5::types::{TypeDescriptor, VarLenUnicode};
 use hdf5::File;
-use hdf5::Group;
 use hdf5::Dataset;
-use hdf5::H5Type;
 
-use ndarray::Array1;
+use arrow::array::{Int64Array, StringArray};
+use arrow::ipc::reader::FileReader;
 
+use polars::prelude::*;
 
-#[derive(Serialize)]
-struct DataFrameRow {
-    column1: String,
-    column2: i32,
-}
-
-#[derive(Serialize)]
-struct DataFrameRow2 {
-    column1: i64,
-    column2: String,
-    column3: String,
-}
-
-#[command]
-fn get_dataframe() -> Vec<DataFrameRow> {
-    // DataFrame を作成
-    let df = df!(
-        "column1" => &["A", "B", "C"],
-        "column2" => &[1, 2, 3]
-    ).expect("Failed to create DataFrame");
-
-    // DataFrame を Vec<DataFrameRow> に変換
-    let column1_series = df.column("column1").expect("Column not found");
-    let column2_series = df.column("column2").expect("Column not found");
-
-    let mut rows = Vec::new();
-
-    for i in 0..df.height() {
-        let column1_value = column1_series.get(i).unwrap().to_string();
-        let column2_value = match column2_series.get(i).unwrap() {
-            AnyValue::Int32(val) => val,
-            _ => panic!("Unexpected type in column2"),
-        };
-        rows.push(DataFrameRow {
-            column1: column1_value,
-            column2: column2_value,
-        });
-    }
-
-    rows
-}
-
-
-#[command]
-fn read_data_frame(file_path: String) -> Vec<DataFrameRow2> {
-    let path = PathBuf::from(file_path.clone());
-    println!("Received file path: {:?}", path);
-
-    // HDF5 を読み込む
-    let file = File::open(file_path.clone()).unwrap();
-    let dataset = file.dataset("arrow_data").unwrap();
-
-    // データを読み込む
-    let data: Vec<u8> = dataset.read_raw().unwrap();
-
-    // Arrow IPC 形式のデータを読み込む
-    let cursor = Cursor::new(data);
-    let reader = FileReader::try_new(cursor, None).unwrap();
-
-    // Arrow のレコードバッチを Polars の DataFrame に変換
-    let mut batches = Vec::new();
-    for batch in reader {
-        let record_batch = batch.unwrap();
-
-        let columns: Vec<Series> = record_batch
-            .columns()
-            .iter()
-            .zip(record_batch.schema().fields())
-            .map(|(array, field)| {
-                match field.data_type() {
-                    arrow::datatypes::DataType::Int64 => {
-                        let int_array = array
-                            .as_any()
-                            .downcast_ref::<Int64Array>()
-                            .expect("Failed to downcast to Int64Array");
-                        Series::new(field.name(), int_array.values())
-                    },
-                    arrow::datatypes::DataType::Utf8 => {
-                        let str_array = array
-                            .as_any()
-                            .downcast_ref::<StringArray>()
-                            .expect("Failed to downcast to Utf8Array");
-                        let str_values: Vec<_> = str_array.iter().map(|s| s.map(|s_val| s_val)).flatten().collect();
-                        Series::new(field.name(), &str_values)
-                    }
-                    _ => unimplemented!("Unsupported data type:{}", field.data_type()),
-                }
-            })
-            .collect();
-        let df = DataFrame::new(columns).unwrap();
-        batches.push(df);
-    }
-
-    let mut concatenated_df = batches[0].clone();
-    for df in &batches[1..] {
-        concatenated_df.vstack_mut(&df);
-    }
-
-    // DataFrame を Vec<DataFrameRow2> に変換
-    let column1_series = concatenated_df.column("column1").expect("Column not found");
-    let column2_series = concatenated_df.column("column2").expect("Column not found");
-    let column3_series = concatenated_df.column("column3").expect("Column not found");
-
-    let mut rows = Vec::new();
-
-    for i in 0..concatenated_df.height() {
-        let column1_value = match column1_series.get(i).unwrap() {
-            AnyValue::Int64(val) => val,
-            _ => panic!("Unexpected type in column1"),
-        };
-        let column2_value = column2_series.get(i).unwrap().to_string();
-        let column3_value = column3_series.get(i).unwrap().to_string();
-        rows.push(DataFrameRow2 {
-            column1: column1_value,
-            column2: column2_value,
-            column3: column3_value,
-        });
-    }
-   
-    rows
-}
+use serde::Serialize;
 
 // - 2024.06.14 -------------------------------------------------------------------------------------------------------
 #[derive(Serialize)]
@@ -268,92 +133,6 @@ fn get_dataframe_dynamic(file_path: String) -> Result<String, String> {
 
     get_dataframe_dynamic_local(&dataset)
 
-    // // データを読み込む
-    // let data: Vec<u8> = dataset.read_raw().unwrap();
-
-    // // Arrow IPC 形式のデータを読み込む
-    // let cursor = Cursor::new(data);
-    // let reader = FileReader::try_new(cursor, None).unwrap();
-
-    // // Arrow のレコードバッチを Polars の DataFrame に変換
-    // let mut batches = Vec::new();
-    // for batch in reader {
-    //     let record_batch = batch.unwrap();
-
-    //     let columns: Vec<Series> = record_batch
-    //         .columns()
-    //         .iter()
-    //         .zip(record_batch.schema().fields())
-    //         .map(|(array, field)| {
-    //             match field.data_type() {
-    //                 arrow::datatypes::DataType::Int64 => {
-    //                     let int_array = array
-    //                         .as_any()
-    //                         .downcast_ref::<Int64Array>()
-    //                         .expect("Failed to downcast to Int64Array");
-    //                     Series::new(field.name(), int_array.values())
-    //                 },
-    //                 arrow::datatypes::DataType::Utf8 => {
-    //                     let str_array = array
-    //                         .as_any()
-    //                         .downcast_ref::<StringArray>()
-    //                         .expect("Failed to downcast to Utf8Array");
-    //                     let str_values: Vec<_> = str_array.iter().map(|s| s.map(|s_val| s_val)).flatten().collect();
-    //                     Series::new(field.name(), &str_values)
-    //                 }
-    //                 _ => unimplemented!("Unsupported data type:{}", field.data_type()),
-    //             }
-    //         })
-    //         .collect();
-    //     let df = DataFrame::new(columns).unwrap();
-    //     batches.push(df);
-    // }
-
-    // let mut df = batches[0].clone();
-    // for df_tmp in &batches[1..] {
-    //     df.vstack_mut(&df_tmp);
-    // }
-
-    // let schema: Vec<DataFrameSchema> = df
-    //     .get_columns()
-    //     .iter()
-    //     .map(|col| DataFrameSchema {
-    //         name: col.name().to_string(),
-    //         dtype: format!("{:?}", col.dtype()),
-    //     })
-    //     .collect();
-
-    // let mut data: Vec<DataFrameRow3> = Vec::new();
-
-    // for i in 0..df.height() {
-    //     let mut row = serde_json::Map::new();
-    //     row.insert("id".to_string(), i.into());
-    //     for col in df.get_columns() {
-    //         let value = col.get(i).unwrap();
-    //         let json_value = match value {
-    //             //AnyValue::Utf8(v) => serde_json::json!(v),
-    //             AnyValue::Int32(v) => serde_json::json!(v),
-    //             AnyValue::Float64(v) => serde_json::json!(v),
-    //             AnyValue::Boolean(v) => serde_json::json!(v),
-    //             AnyValue::Int64(v) => serde_json::json!(v),
-    //             AnyValue::UInt32(v) => serde_json::json!(v),
-    //             AnyValue::UInt64(v) => serde_json::json!(v),
-    //             AnyValue::Float32(v) => serde_json::json!(v),
-    //             //AnyValue::Utf8Owned(v) => serde_json::json!(v),
-    //             //AnyValue::List(v) => serde_json::json!(v),
-    //             AnyValue::Date(v) => serde_json::json!(v),
-    //             AnyValue::Datetime(v, _, _) => serde_json::json!(v),
-    //             AnyValue::Time(v) => serde_json::json!(v),
-    //             AnyValue::Null => serde_json::json!(null),
-    //             _ => serde_json::json!(format!("{:?}", value)), // デフォルトとしてデバッグ表記を使用
-    //         };
-    //         row.insert(col.name().to_string(), json_value);
-    //     }
-    //     data.push(DataFrameRow3 { row });
-    // }
-
-    // let response = DataFrameResponse { schema, data };
-    // serde_json::to_string(&response).map_err(|e| e.to_string())
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -472,13 +251,6 @@ fn convert_string(dataset: &Dataset) -> Result<String, Box<dyn std::error::Error
                     let data: VarLenUnicode = dataset.read_scalar()?;
                     Ok(data.as_str().to_string())
 
-                    // let string_vec: Array1<VarLenUnicode> = dataset.read_1d()?;
-                    
-                    // let mut result_string = String::from("");
-                    // for s in string_vec {
-                    //     result_string.push_str(s.as_str());
-                    // }
-                    // Ok(result_string)
                 },
                 _ =>  {
                     println!("convert_string - FixedArray Not - ERR: {:?}", type_descriptor.to_string());
@@ -536,8 +308,6 @@ fn read_hdf5_data(file_path: String, full_key: String) -> Result<String, String>
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            get_dataframe, 
-            read_data_frame, 
             get_dataframe_dynamic, 
             get_hdf5_keys, 
             read_hdf5_data

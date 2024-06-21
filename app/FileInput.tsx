@@ -1,5 +1,4 @@
 import React from 'react';
-import { dialog } from "@tauri-apps/api";
 
 type FileInputProps = {
   filePath: string;

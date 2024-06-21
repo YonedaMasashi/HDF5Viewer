@@ -1,12 +1,5 @@
 "use client"
 
-import Image from "next/image";
-import Greet from './greet';
-import SampleDF from './SampleDF';
-import FilePath from './FilePath';
-import ReadDF from './ReadDF';
-import DynamicDF2 from "./DynamicDF2";
-import Sidebar from "./Sidebar";
 import FileInput from "./FileInput";
 import SidebarFromHdf5 from "./SidebarFromHdf5";
 import HDF5Contents from "./HDF5Contents";
@@ -31,16 +24,9 @@ export default function Home() {
 
   return (
     <div className="app">
-      {/*<Sidebar />*/}
       <SidebarFromHdf5 filePath={inputFilePath} onKeyChange={handleSelectIdsChange} />
 
       <main>
-        {/* <Greet /> */}
-        {/*<FilePath />
-        <SampleDF />
-        <ReadDF /> 
-        <DynamicDF2 /> */}
-
         <FileInput
           filePath={inputFilePath}
           onFilePathChange={handleFilePathChange}
