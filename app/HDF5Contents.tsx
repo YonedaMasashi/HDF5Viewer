@@ -8,7 +8,7 @@ import { Container } from '@mui/material';
   
 type HDF5ContentsProps = {
   filePath: string;
-  fullKey: string;
+  fullKey: string[];
 };
 
 
@@ -40,7 +40,7 @@ const HDF5Contents: React.FC<HDF5ContentsProps> = ({ filePath, fullKey }) => {
   useEffect(() => {
     async function fetchData() {
       console.log("HDF5Contents 1: " + filePath);
-      console.log("HDF5Contents 1: " + fullKey);
+      console.log("HDF5Contents 1: " + fullKey[0]);
       console.log("HDF5Contents 2: " + filePath);
       invoke<string>('read_hdf5_data', { filePath, fullKey })
         .then((response) => {
@@ -73,10 +73,10 @@ const HDF5Contents: React.FC<HDF5ContentsProps> = ({ filePath, fullKey }) => {
   }, [filePath, fullKey]);
 
   return (
-    <div>
+    <div  className="contents">
         { isDataFrame ? (
-          <Container style={{ height: 400, width: '100%' }}>
-            <DataGrid rows={rows} columns={columns} pageSize={5} checkboxSelection />
+          <Container>
+            <DataGrid rows={rows} columns={columns} />
           </Container>
         ) : (
           <Box>

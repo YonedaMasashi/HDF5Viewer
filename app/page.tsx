@@ -1,5 +1,8 @@
 "use client"
 
+import sidebar_css from "./styles/sidebar.module.css";
+import contents_css from "./styles/contents.module.css";
+
 import FileInput from "./FileInput";
 import SidebarFromHdf5 from "./SidebarFromHdf5";
 import HDF5Contents from "./HDF5Contents";
@@ -24,18 +27,25 @@ export default function Home() {
 
   return (
     <div className="app">
-      <SidebarFromHdf5 filePath={inputFilePath} onKeyChange={handleSelectIdsChange} />
+      <div className={sidebar_css.sidebar}>
+      {/*<div style={{ width: '200px' }}>*/}
+        <SidebarFromHdf5 filePath={inputFilePath} onKeyChange={handleSelectIdsChange} />
+      </div>
 
       <main>
-        <FileInput
-          filePath={inputFilePath}
-          onFilePathChange={handleFilePathChange}
-        />
+        <div>
+          <FileInput
+            filePath={inputFilePath}
+            onFilePathChange={handleFilePathChange}
+          />
+        </div>
 
-        <HDF5Contents
-          filePath={inputFilePath}
-          fullKey={selectIds}
-        />
+        <div className={contents_css.contents}>
+          <HDF5Contents
+            filePath={inputFilePath}
+            fullKey={selectIds}
+          />
+        </div>
 
       </main>
     </div>

@@ -6,6 +6,9 @@ import { TreeItem } from '@mui/x-tree-view';
 import { Hdf5Node } from './types';
 import { invoke } from '@tauri-apps/api/tauri';
 
+import "./globals.css";
+
+
 type SidebarFromHdf5Props = {
   filePath: string;
   onKeyChange: (newKey: string[]) => void;
@@ -53,6 +56,7 @@ const SidebarFromHdf5: React.FC<SidebarFromHdf5Props> = ({ filePath, onKeyChange
                 aria-label="hdf5 tree"
                 selectedItems={selectedItems}
                 onSelectedItemsChange={handleNodeSelect}
+                style={{ width: '300px' }} 
             >
                 {renderTree(treeData)}
             </SimpleTreeView>

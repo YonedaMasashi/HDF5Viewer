@@ -6,7 +6,7 @@ use hdf5::types::{TypeDescriptor, VarLenUnicode};
 use hdf5::File;
 use hdf5::Dataset;
 
-use arrow::array::{Int64Array, StringArray};
+use arrow::array::{Int64Array, Int32Array, Float64Array, StringArray};
 use arrow::ipc::reader::FileReader;
 
 use polars::prelude::*;
@@ -70,6 +70,20 @@ fn get_dataframe_dynamic_local(dataset: &Dataset) -> Result<String, String> {
                             .as_any()
                             .downcast_ref::<Int64Array>()
                             .expect("Failed to downcast to Int64Array");
+                        Series::new(field.name(), int_array.values())
+                    },
+                    arrow::datatypes::DataType::Int32 => {
+                        let int_array = array
+                            .as_any()
+                            .downcast_ref::<Int32Array>()
+                            .expect("Failed to downcast to Int32Array");
+                        Series::new(field.name(), int_array.values())
+                    },
+                    arrow::datatypes::DataType::Float64 => {
+                        let int_array = array
+                            .as_any()
+                            .downcast_ref::<Float64Array>()
+                            .expect("Failed to downcast to Float64Array");
                         Series::new(field.name(), int_array.values())
                     },
                     arrow::datatypes::DataType::Utf8 => {
