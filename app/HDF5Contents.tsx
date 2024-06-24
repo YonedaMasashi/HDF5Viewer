@@ -8,7 +8,7 @@ import { Container } from '@mui/material';
   
 type HDF5ContentsProps = {
   filePath: string;
-  fullKey: string[];
+  fullKey: string | null;
 };
 
 
@@ -40,7 +40,7 @@ const HDF5Contents: React.FC<HDF5ContentsProps> = ({ filePath, fullKey }) => {
   useEffect(() => {
     async function fetchData() {
       console.log("HDF5Contents 1: " + filePath);
-      console.log("HDF5Contents 1: " + fullKey[0]);
+      console.log("HDF5Contents 1: " + fullKey);
       console.log("HDF5Contents 2: " + filePath);
       invoke<string>('read_hdf5_data', { filePath, fullKey })
         .then((response) => {

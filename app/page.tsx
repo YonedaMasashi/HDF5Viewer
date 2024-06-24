@@ -13,14 +13,14 @@ import React, { useState } from 'react';
 
 export default function Home() {
   const [inputFilePath, setInputFilePath] = useState('');
-  const [selectIds, setSelectIds] = useState<string[]>([]);
+  const [selectIds, setSelectIds] = useState<string | null>('');
 
   const handleFilePathChange = (newFilePath: string) => {
     console.log("Paga.handleFilePathChange : " + newFilePath);
     setInputFilePath(newFilePath);
   };
 
-  const handleSelectIdsChange = (newKey: string[]) => {
+  const handleSelectIdsChange = (newKey: string | null) => {
     console.log("Paga.handleSelectIdsChange : " + newKey);
     setSelectIds(newKey);
   };

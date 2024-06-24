@@ -11,17 +11,17 @@ import "./globals.css";
 
 type SidebarFromHdf5Props = {
   filePath: string;
-  onKeyChange: (newKey: string[]) => void;
+  onKeyChange: (newKey: string | null) => void;
 };
 
 
 const SidebarFromHdf5: React.FC<SidebarFromHdf5Props> = ({ filePath, onKeyChange }) => {
   const [treeData, setTreeData] = useState<Hdf5Node | null>(null);
-  const [selectedItems, setSelectedItems] = React.useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = React.useState<string | null>('');
 
   console.log("SidebarFromHdf5 1: " + filePath);
 
-  const handleNodeSelect = (event: SyntheticEvent, itemIds: string[]) => {
+  const handleNodeSelect = (event: SyntheticEvent, itemIds: string | null) => {
     setSelectedItems(itemIds);
     onKeyChange(itemIds);
   };
