@@ -38,7 +38,9 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [],
+      "resources": [
+        "C:/soft/install/hdf5/HDF5-1.12.3-win64/bin/hdf5.dll"
+      ],
       "shortDescription": "",
       "targets": "all",
       "windows": {
