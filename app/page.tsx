@@ -6,6 +6,7 @@ import contents_css from "./styles/contents.module.css";
 import FileInput from "./FileInput";
 import SidebarFromHdf5 from "./SidebarFromHdf5";
 import HDF5Contents from "./HDF5Contents";
+import PropertySideBar from "./PropertySideBar";
 
 import React, { useState } from 'react';
 
@@ -48,6 +49,11 @@ export default function Home() {
         </div>
 
       </main>
+      <div className={sidebar_css.sidebar}>
+      {/*<div style={{ width: '200px' }}>*/}
+        <PropertySideBar propertyData="" />
+      </div>
+
     </div>
   );
 }

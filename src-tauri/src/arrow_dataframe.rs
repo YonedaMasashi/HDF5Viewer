@@ -156,7 +156,6 @@ fn convert_string(dataset: &Dataset) -> Result<String, Box<dyn std::error::Error
     let shape = dataset.shape();
     println!("convert_string : dtype:{:?}, shape:{:?}", dtype.id(), shape);
 
-
     match dtype.to_descriptor() {
         Ok(type_descriptor) => {
             println!("convert_string : Ok(type_descriptor)");

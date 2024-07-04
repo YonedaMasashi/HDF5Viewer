@@ -39,7 +39,7 @@
         "signingIdentity": null
       },
       "resources": [
-        "C:/soft/install/hdf5/HDF5-1.12.3-win64/bin/hdf5.dll"
+        "hdf5.dll"
       ],
       "shortDescription": "",
       "targets": "all",
@@ -61,7 +61,7 @@
         "height": 600,
         "resizable": true,
         "title": "HDF5Viewer",
-        "width": 800
+        "width": 1000
       }
     ]
   }

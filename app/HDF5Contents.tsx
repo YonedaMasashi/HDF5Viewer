@@ -79,7 +79,7 @@ const HDF5Contents: React.FC<HDF5ContentsProps> = ({ filePath, fullKey }) => {
             <DataGrid rows={rows} columns={columns} />
           </Container>
         ) : (
-          <Box>
+          <Box height={300}>
           {contents}
           </Box>
         )}
