@@ -51,7 +51,10 @@ export default function Home() {
       </main>
       <div className={sidebar_css.sidebar}>
       {/*<div style={{ width: '200px' }}>*/}
-        <PropertySideBar propertyData="" />
+        <PropertySideBar 
+            filePath={inputFilePath}
+            fullKey={selectIds}
+        />
       </div>
 
     </div>

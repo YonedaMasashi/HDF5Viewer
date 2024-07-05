@@ -50,13 +50,28 @@ arrow_buffer = sink.getvalue()
 
 # HDF5 ファイルに保存
 with h5py.File('15x200000.h5', 'w') as h5file:
-    h5file.create_dataset('Root1/Int', data=1)
-    h5file.create_dataset('Root1/String', data="hoge1")
-    h5file.create_dataset('Root1/Child/Float', data=1.345)
-    h5file.create_dataset('Root1/DataFrameValues', data=np.frombuffer(arrow_buffer, dtype=np.uint8))
-    h5file.create_dataset('Root2/Int', data=2)
-    h5file.create_dataset('Root2/String', data="hoge2")
-    h5file.create_dataset('Root2/Child/Float', data=2.345)
+    dataset = h5file.create_dataset('Root1/Int', data=1)
+    dataset.attrs['type'] = 'int'
+
+    dataset = h5file.create_dataset('Root1/String', data="hoge1")
+    dataset.attrs['type'] = 'string'
+
+    dataset = h5file.create_dataset('Root1/Child/Float', data=1.345)
+    dataset.attrs['type'] = 'float'
+
+    dataset = h5file.create_dataset('Root1/DataFrameValues', data=np.frombuffer(arrow_buffer, dtype=np.uint8))
+    dataset.attrs['type'] = 'table'
+    dataset.attrs['table_type'] = 'parquet'
+
+    dataset = h5file.create_dataset('Root2/Int', data=2)
+    dataset.attrs['type'] = 'int'
+
+    dataset = h5file.create_dataset('Root2/String', data="hoge2")
+    dataset.attrs['type'] = 'string'
+
+    dataset = h5file.create_dataset('Root2/Child/Float', data=2.345)
+    dataset.attrs['type'] = 'float'
+    
     h5file.create_dataset('Root3/CHild1/Int', data=3)
     h5file.create_dataset('Root3/CHild1/String', data="hoge3")
     h5file.create_dataset('Root3/CHild1/Child/Float', data=3.345)
